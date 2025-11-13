@@ -4,4 +4,5 @@
 
 body {
   font-family: 'Inter', sans-serif;
+  @apply bg-gradient-to-br from-light-bg to-white dark:from-dark-bg dark:to-gray-900;
 }

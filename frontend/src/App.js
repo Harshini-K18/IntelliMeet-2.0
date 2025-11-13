@@ -6,23 +6,24 @@ import InputSection from "./components/InputSection";
 import StatusMessage from "./components/StatusMessage";
 import TranscriptSection from "./components/TranscriptSection";
 import Footer from "./components/Footer";
-import MomSection from "./components/momsection";
+import NotesSection from "./components/NotesSection";
 import { handleDownloadTranscript } from "./utils/downloadTranscript";
-import SummarySection from "./components/SummarySection";
+//import SummarySection from "./components/SummarySection";
 import MeetingAnalytics from "./components/MeetingAnalytics";
-import ActionItemsSection from "./components/ActionItemsSection";
 
 const socket = io("http://localhost:3001");
 
 const App = () => {
   const [meetingUrl, setMeetingUrl] = useState("");
   const [transcripts, setTranscripts] = useState([]);
+  //const [summary, setSummary] = useState("");
+  const [notes, setNotes] = useState([]);
   const [status, setStatus] = useState("");
   const [darkMode, setDarkMode] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const transcriptContainerRef = useRef(null);
 
-  // Apply theme class to the root element
+  // Theme management
   useEffect(() => {
     const root = window.document.documentElement;
     if (darkMode) {
@@ -33,7 +34,6 @@ const App = () => {
     localStorage.setItem("darkMode", darkMode);
   }, [darkMode]);
 
-  // Load theme preference from local storage
   useEffect(() => {
     const storedDarkMode = localStorage.getItem("darkMode");
     if (storedDarkMode) {
@@ -45,22 +45,54 @@ const App = () => {
     setDarkMode((prev) => !prev);
   };
 
-  // Handle real-time transcript updates
+  // Handle all real-time socket events
   useEffect(() => {
-    socket.on("transcript", (transcript) => {
-      setTranscripts((prev) => [...prev, transcript]);
+    // THIS IS THE FIX FOR DISAPPEARING TRANSCRIPTS
+    socket.on("transcript", (newTranscript) => {
+      if (!newTranscript || !newTranscript.utterance_id) {
+        return; // Safety check for invalid data
+      }
+      setTranscripts((prevTranscripts) => {
+        const existingIndex = prevTranscripts.findIndex(
+          (t) => t.utterance_id === newTranscript.utterance_id
+        );
+
+        if (existingIndex !== -1) {
+          // Update an existing transcript line
+          const updatedTranscripts = [...prevTranscripts];
+          updatedTranscripts[existingIndex] = newTranscript;
+          return updatedTranscripts;
+        } else {
+          // Add a new transcript line
+          return [...prevTranscripts, newTranscript];
+        }
+      });
     });
-    return () => socket.off("transcript");
+
+   /* socket.on("summary", (data) => {
+      if (data && data.summary) {
+        setSummary(data.summary);
+      }
+    });*/
+
+    socket.on("notes", (data) => {
+      if (data && data.notes) {
+        setNotes(data.notes);
+      }
+    });
+
+    return () => {
+      socket.off("transcript");
+      // socket.off("summary");
+      socket.off("notes");
+    };
   }, []);
 
-  // Auto-scroll to bottom when new transcripts arrive
+  // Auto-scroll to bottom of transcript
   useEffect(() => {
     const container = transcriptContainerRef.current;
     if (container) {
-      const lastChild = container.lastElementChild;
-      if (lastChild) {
-        lastChild.scrollIntoView({ behavior: "smooth" });
-      }
+      container.scrollTop = container.scrollHeight;
     }
   }, [transcripts]);
 
@@ -86,10 +118,11 @@ const App = () => {
   const handleClearTranscript = () => {
     if (window.confirm("Are you sure you want to clear all transcripts?")) {
       setTranscripts([]);
+      // setSummary("");
+      setNotes([]);
     }
   };
 
-  // Copy bot ID
   const handleCopyBotId = () => {
     const botId = status.replace("Bot deployed with ID: ", "").trim();
     navigator.clipboard.writeText(botId);
@@ -98,13 +131,16 @@ const App = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text transition-colors duration-300 font-sans">
+    <div className="relative min-h-screen bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text transition-colors duration-300 font-sans animate-fade-in">
       <Navbar toggleDarkMode={toggleDarkMode} darkMode={darkMode} />
 
-      <div className="max-w-3xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-semibold mb-2">
-            IntelliMeet Transcription Bot
+          <h1
+            className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-light-accent to-light-text dark:from-dark-accent dark:to-white"
+            style={{ fontFamily: " sans-serif" }}
+          >
+            IntelliMeet - Meetings Made Seamless with AI
           </h1>
           <h6 className="text-sm font-normal">
             Supports Google Meet, Zoom, and Microsoft Teams
@@ -115,9 +151,11 @@ const App = () => {
         <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md mb-8">
           <InputSection
             meetingUrl={meetingUrl}
-            setMeetingUrl={setMeetingUrl}
+            setMeetingUrl={setMeetingUrl}        // <-- pass setter so InputSection can update
             handleDeployBot={handleDeployBot}
           />
+
+          {/* Render StatusMessage so it is detected and works */}
           <StatusMessage
             status={status}
             handleCopyBotId={handleCopyBotId}
@@ -125,34 +163,40 @@ const App = () => {
           />
         </div>
 
-        {/* Transcripts */}
-        <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md mb-8">
-          <TranscriptSection
-            transcripts={transcripts}
-            transcriptContainerRef={transcriptContainerRef}
-            handleDownloadTranscript={handleDownloadTranscript}
-            handleClearTranscript={handleClearTranscript}
-          />
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column: Transcripts */}
+          <div className="lg:col-span-2">
+            <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
+              <TranscriptSection
+                transcripts={transcripts}
+                transcriptContainerRef={transcriptContainerRef}
+                handleDownloadTranscript={() =>
+                  handleDownloadTranscript(transcripts)
+                }
+                handleClearTranscript={handleClearTranscript}
+              />
+            </div>
+          </div>
 
-        {/* Summary */}
-        <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md mb-8">
-          <SummarySection />
-        </div>
+          {/* Right Column: Summary, MoM, Analytics */}
+          <div className="lg:col-span-1 flex flex-col gap-8">
+           {/* Summary */}
+            {/*
+            <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
+              <SummarySection summary={summary} />
+            </div>
+            */}
 
-        {/* Minutes of Meeting */}
-        <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md mb-8">
-          <MomSection />
-        </div>
+            {/* Important Notes */}
+            <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
+              <NotesSection notes={notes} />
+            </div>
 
-        {/* Meeting Analytics */}
-        <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md mb-8">
-          <MeetingAnalytics transcript={transcripts} />
-        </div>
-
-        {/* Action Items */}
-        <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md mb-8">
-          <ActionItemsSection transcript={transcripts} />
+            {/* Meeting Analytics */}
+            <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
+              <MeetingAnalytics transcript={transcripts} />
+            </div>
+          </div>
         </div>
       </div>
 

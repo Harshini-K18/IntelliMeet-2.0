@@ -1,13 +1,24 @@
 import React from "react";
 
 const InputSection = ({ meetingUrl, setMeetingUrl, handleDeployBot }) => {
+  const onChange = (e) => {
+    // defensive check: ensure setMeetingUrl is a function before calling
+    if (typeof setMeetingUrl === "function") {
+      setMeetingUrl(e.target.value);
+    } else {
+      // helpful debug output if something is wrong with props
+      // eslint-disable-next-line no-console
+      console.error("setMeetingUrl is not a function:", setMeetingUrl);
+    }
+  };
+
   return (
     <div className="flex flex-col sm:flex-row gap-4 justify-center">
       <input
         type="text"
         placeholder="Enter Meeting URL"
         value={meetingUrl}
-        onChange={(e) => setMeetingUrl(e.target.value)}
+        onChange={onChange}
         className="flex-1 px-4 py-2 border border-light-accent rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-light-accent bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text dark:placeholder-gray-400 dark:border-dark-accent dark:focus:ring-dark-accent transition-colors duration-300"
       />
       <button

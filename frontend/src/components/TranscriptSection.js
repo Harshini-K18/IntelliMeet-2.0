@@ -76,32 +76,6 @@ const TranscriptSection = ({
           Clear Transcript
         </button>
       </div>
-
-      {/* Important Notes Section */}
-      <div className="mt-8">
-        <h2 className="text-xl font-medium text-light-text dark:text-dark-text text-center mb-4">
-          Important Notes
-        </h2>
-        {notes.length === 0 ? (
-          <p className="text-light-text dark:text-dark-text text-center">
-            No notes yet...
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {notes.map((n, index) => (
-              <li
-                key={index}
-                className="bg-light-bg dark:bg-dark-bg p-4 rounded-lg shadow-inner"
-              >
-                <strong className="block text-light-text dark:text-dark-text">
-                  {n.speaker}:
-                </strong>
-                <span className="text-light-text dark:text-dark-text">{n.notes}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
     </div>
   );
 };

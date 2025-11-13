@@ -17,14 +17,15 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
                   className="logo-light"
                 />
               ) : (
+                
                 <img
                   width="108"
                   loading="lazy"
-                  alt="Recall.ai logo"
-                  src="https://cdn.prod.website-files.com/620d732b1f1f7b244ac89f0e/66b294e51ee15f18dd2b171e_recall-logo.svg"
+                  //alt="Recall.ai logo"
+                  //src="https://cdn.prod.website-files.com/620d732b1f1f7b244ac89f0e/66b294e51ee15f18dd2b171e_recall-logo.svg"
                   className="logo-dark"
                 />
-              )}
+              )}<p>IntelliMeet</p>
             </a>
           </div>
           <div className="flex items-center">
@@ -35,7 +36,7 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
               rel="noreferrer"
             >
               <div className="text-light-text dark:text-dark-text">
-                <p>API Docs</p>
+                <p></p>
               </div>
               {darkMode ? (
                 <img
