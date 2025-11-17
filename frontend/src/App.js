@@ -10,6 +10,7 @@ import NotesSection from "./components/NotesSection";
 import { handleDownloadTranscript } from "./utils/downloadTranscript";
 //import SummarySection from "./components/SummarySection";
 import MeetingAnalytics from "./components/MeetingAnalytics";
+import MeetingSummary from "./components/MeetingSummary"; // Updated import
 
 const socket = io("http://localhost:3001");
 
@@ -195,6 +196,11 @@ const App = () => {
             {/* Meeting Analytics */}
             <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
               <MeetingAnalytics transcript={transcripts} />
+            </div>
+
+            {/* MoM Section - Always visible at the bottom right */}
+            <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
+              <MeetingSummary /> {/* Updated component */}
             </div>
           </div>
         </div>
