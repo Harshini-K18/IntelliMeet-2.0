@@ -6,11 +6,12 @@ import InputSection from "./components/InputSection";
 import StatusMessage from "./components/StatusMessage";
 import TranscriptSection from "./components/TranscriptSection";
 import Footer from "./components/Footer";
-import NotesSection from "./components/NotesSection";
+//import NotesSection from "./components/NotesSection";
 import { handleDownloadTranscript } from "./utils/downloadTranscript";
 //import SummarySection from "./components/SummarySection";
 import MeetingAnalytics from "./components/MeetingAnalytics";
 import MeetingSummary from "./components/MeetingSummary"; // Updated import
+import TaskExtractor from "./components/TaskExtractor";
 
 const socket = io("http://localhost:3001");
 
@@ -18,7 +19,7 @@ const App = () => {
   const [meetingUrl, setMeetingUrl] = useState("");
   const [transcripts, setTranscripts] = useState([]);
   //const [summary, setSummary] = useState("");
-  const [notes, setNotes] = useState([]);
+  //const [notes, setNotes] = useState([]);
   const [status, setStatus] = useState("");
   const [darkMode, setDarkMode] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -74,18 +75,18 @@ const App = () => {
       if (data && data.summary) {
         setSummary(data.summary);
       }
-    });*/
+    });
 
     socket.on("notes", (data) => {
       if (data && data.notes) {
         setNotes(data.notes);
       }
-    });
+    }); */
 
     return () => {
       socket.off("transcript");
       // socket.off("summary");
-      socket.off("notes");
+      //socket.off("notes");
     };
   }, []);
 
@@ -120,7 +121,7 @@ const App = () => {
     if (window.confirm("Are you sure you want to clear all transcripts?")) {
       setTranscripts([]);
       // setSummary("");
-      setNotes([]);
+      //setNotes([]);
     }
   };
 
@@ -188,10 +189,7 @@ const App = () => {
             </div>
             */}
 
-            {/* Important Notes */}
-            <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
-              <NotesSection notes={notes} />
-            </div>
+            
 
             {/* Meeting Analytics */}
             <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
@@ -204,6 +202,9 @@ const App = () => {
             </div>
           </div>
         </div>
+
+        {/* Task extractor UI (safe, non‑intrusive) */}
+        <TaskExtractor />
       </div>
 
       <Footer />
