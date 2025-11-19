@@ -66,11 +66,11 @@ const MeetingSummary = () => {
     return out;
   };
 
-  return (
+ return (
     <div className="mt-8">
-      <h2 className="text-2xl font-semibold mb-4 text-center">Generate Meeting Summary</h2>
+      <h2 className="text-2xl font-semibold mb-4 text-center">Generate Minutes of Meeting</h2>
       <textarea
-        className="w-full p-4 border rounded-md mb-4"
+        className="w-full p-4 border rounded-md mb-4 bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text dark:border-gray-600"
         rows="6"
         placeholder="Paste the meeting transcript here..."
         value={transcript}
@@ -78,14 +78,14 @@ const MeetingSummary = () => {
       ></textarea>
       <button
         onClick={handleGenerateSummary}
-        className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 transition disabled:opacity-60"
+        className="bg-light-accent text-light-bg px-4 py-2 rounded-md hover:bg-opacity-90 transition disabled:opacity-60 dark:bg-dark-accent dark:text-dark-bg"
         disabled={loading}
       >
-        {loading ? "Generating..." : "Generate Summary"}
+        {loading ? "Generating..." : "Generate MOM"}
       </button>
 
       {mom && (
-        <div className="bg-gray-100 p-4 rounded-md shadow-md mt-4 whitespace-pre-wrap">
+        <div className="bg-light-card dark:bg-dark-card p-4 rounded-md shadow-md mt-4 whitespace-pre-wrap">
           <h3 className="text-xl font-bold mb-2">Minutes of Meeting:</h3>
           <div dangerouslySetInnerHTML={{ __html: mom }} />
         </div>
@@ -93,5 +93,4 @@ const MeetingSummary = () => {
     </div>
   );
 };
-
 export default MeetingSummary;

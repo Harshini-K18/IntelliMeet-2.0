@@ -166,8 +166,8 @@ const App = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Transcripts */}
-          <div className="lg:col-span-2">
+          {/* Left Column: Transcripts and Tasks */}
+          <div className="lg:col-span-2 flex flex-col gap-8">
             <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
               <TranscriptSection
                 transcripts={transcripts}
@@ -177,6 +177,10 @@ const App = () => {
                 }
                 handleClearTranscript={handleClearTranscript}
               />
+            </div>
+            {/* Task Extractor */}
+            <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
+              <TaskExtractor />
             </div>
           </div>
 
@@ -204,7 +208,7 @@ const App = () => {
         </div>
 
         {/* Task extractor UI (safe, non‑intrusive) */}
-        <TaskExtractor />
+        {/* <TaskExtractor /> */}
       </div>
 
       <Footer />

@@ -265,7 +265,7 @@ const TaskExtractor = ({ initialTranscript = "" }) => {
             <input type="checkbox" checked={autoExtract} onChange={(e) => setAutoExtract(e.target.checked)} className="h-4 w-4" />
             Auto-extract from live transcript
           </label>
-          <button
+           <button
             onClick={() => {
               setTranscript("");
               setTasks([]);
@@ -273,22 +273,23 @@ const TaskExtractor = ({ initialTranscript = "" }) => {
               seenSignatures.current.clear();
               setSaveStatus(null);
             }}
-            className="border px-3 py-1 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+            className="border px-3 py-1 rounded-md text-sm hover:bg-light-accent hover:text-light-bg dark:hover:bg-dark-accent dark:hover:text-dark-bg dark:border-gray-600 dark:text-gray-300"
           >
             Clear Transcript
           </button>
           <div className="ml-auto text-sm text-gray-500 dark:text-gray-400">Tip: Auto-extract sends the full transcript on update</div>
         </div>
-        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Transcript</label>
-        <textarea
-          className="w-full border rounded-md p-3 mb-3 text-sm bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
-          rows={8}
-          value={transcript}
-          onChange={(e) => setTranscript(e.target.value)}
-          placeholder="[0:01] Alice: Please send the report by tomorrow..."
-        />
+        {/* Transcript Input */}
+        <div className="mb-4">
+          <textarea
+            value={transcript}
+            onChange={(e) => setTranscript(e.target.value)}
+            placeholder="Transcript will appear here... or paste your own."
+            className="w-full h-20 p-2 border rounded-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text"
+          />
+        </div>
         <div className="flex gap-2 mb-4">
-          <button onClick={() => triggerExtract()} disabled={loading} className="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 disabled:opacity-60">
+          <button onClick={() => triggerExtract()} disabled={loading} className="bg-light-accent text-light-bg px-4 py-2 rounded-md hover:bg-opacity-90 disabled:opacity-60 dark:bg-dark-accent dark:text-dark-bg">
             {loading ? "Extracting..." : "Extract Tasks"}
           </button>
           <button
@@ -296,7 +297,7 @@ const TaskExtractor = ({ initialTranscript = "" }) => {
               const lastLine = transcript.trim().split("\n").pop() || "";
               triggerExtract(lastLine || transcript);
             }}
-            className="border px-4 py-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+            className="border px-4 py-2 rounded-md hover:bg-light-accent hover:text-light-bg dark:hover:bg-dark-accent dark:hover:text-dark-bg dark:border-gray-600 dark:text-gray-300"
           >
             Extract Latest
           </button>
@@ -310,7 +311,7 @@ const TaskExtractor = ({ initialTranscript = "" }) => {
                 mergeNewTasks([p]);
               }
             }}
-            className="border px-4 py-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+            className="border px-4 py-2 rounded-md hover:bg-light-accent hover:text-light-bg dark:hover:bg-dark-accent dark:hover:text-dark-bg dark:border-gray-600 dark:text-gray-300"
           >
             Preview Latest
           </button>
@@ -320,7 +321,8 @@ const TaskExtractor = ({ initialTranscript = "" }) => {
           <div className="mt-4">
             <h3 className="font-bold mb-3 text-gray-800 dark:text-gray-100">Extracted Tasks</h3>
             {tasks.length === 0 && <div className="text-sm text-gray-600 dark:text-gray-400">No tasks found.</div>}
-            <ul className="space-y-3">
+            {/* Task List */}
+            <ul className="space-y-4">
               {tasks.map((t, i) => {
                 const src = t.source || "default";
                 const cardCls = getCardClasses(src === "preview" ? "preview" : src);
@@ -357,13 +359,13 @@ const TaskExtractor = ({ initialTranscript = "" }) => {
               })}
             </ul>
             <div className="mt-4 flex items-center gap-3">
-              <button onClick={() => saveToProvider("trello")} disabled={saving} className="bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 disabled:opacity-60">
+              <button onClick={() => saveToProvider("trello")} disabled={saving} className="bg-light-accent text-light-bg px-3 py-2 rounded-md hover:bg-opacity-90 disabled:opacity-60 dark:bg-dark-accent dark:text-dark-bg">
                 {saving ? "Saving..." : "Save to Trello"}
               </button>
-              <button onClick={() => saveToProvider("asana")} disabled={saving} className="bg-violet-600 text-white px-3 py-2 rounded-md hover:bg-violet-700 disabled:opacity-60">
+              <button onClick={() => saveToProvider("asana")} disabled={saving} className="bg-light-accent text-light-bg px-3 py-2 rounded-md hover:bg-opacity-90 disabled:opacity-60 dark:bg-dark-accent dark:text-dark-bg">
                 {saving ? "Saving..." : "Save to Asana"}
               </button>
-              <button onClick={emailTasks} className="border px-3 py-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-300">
+              <button onClick={emailTasks} className="border px-3 py-2 rounded-md hover:bg-light-accent hover:text-light-bg dark:hover:bg-dark-accent dark:hover:text-dark-bg dark:border-gray-600 dark:text-gray-300">
                 Email Tasks
               </button>
               <button
@@ -372,7 +374,7 @@ const TaskExtractor = ({ initialTranscript = "" }) => {
                   setSaveStatus({ provider: "clipboard", status: "ok", msg: "Copied to clipboard" });
                   setTimeout(() => setSaveStatus(null), 2500);
                 }}
-                className="border px-3 py-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                className="border px-3 py-2 rounded-md hover:bg-light-accent hover:text-light-bg dark:hover:bg-dark-accent dark:hover:text-dark-bg dark:border-gray-600 dark:text-gray-300"
               >
                 Copy
               </button>
@@ -382,7 +384,7 @@ const TaskExtractor = ({ initialTranscript = "" }) => {
                   seenSignatures.current.clear();
                   setSaveStatus(null);
                 }}
-                className="ml-auto border px-3 py-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                className="ml-auto border px-3 py-2 rounded-md hover:bg-light-accent hover:text-light-bg dark:hover:bg-dark-accent dark:hover:text-dark-bg dark:border-gray-600 dark:text-gray-300"
               >
                 Clear Tasks
               </button>
