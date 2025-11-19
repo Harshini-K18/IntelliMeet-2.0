@@ -5,35 +5,35 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const MeetingAnalytics = ({ transcript }) => {
-  const getSpeakerWordCount = () => {
-    const speakerWords = {};
+  const getInteractionData = () => {
+    const interactionCounts = {};
     transcript.forEach(item => {
-      const speaker = item.speaker;
-      const words = item.text.split(' ').length;
-      if (speaker in speakerWords) {
-        speakerWords[speaker] += words;
+      const speaker = item.speaker || 'Unknown Speaker';
+      if (speaker in interactionCounts) {
+        interactionCounts[speaker] += 1;
       } else {
-        speakerWords[speaker] = words;
+        interactionCounts[speaker] = 1;
       }
     });
-    return speakerWords;
+    return interactionCounts;
   };
 
-  const speakerData = getSpeakerWordCount();
+  const interactionData = getInteractionData();
+  const maxCount = Math.max(...Object.values(interactionData), 0);
 
   const data = {
-    labels: Object.keys(speakerData),
+    labels: Object.keys(interactionData),
     datasets: [
       {
-        label: 'Words Spoken',
-        data: Object.values(speakerData),
+        label: 'Number of Interactions',
+        data: Object.values(interactionData),
         backgroundColor: [
           'rgba(255, 99, 132, 0.2)',
           'rgba(54, 162, 235, 0.2)',
           'rgba(255, 206, 86, 0.2)',
           'rgba(75, 192, 192, 0.2)',
           'rgba(153, 102, 255, 0.2)',
-          'rgba(255, 159, 64, 0.2)',
+          'rgba(255, 159, 64,.2)',
         ],
         borderColor: [
           'rgba(255, 99, 132, 1)',
@@ -50,11 +50,34 @@ const MeetingAnalytics = ({ transcript }) => {
 
   return (
     <div className="bg-light-card dark:bg-dark-card p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-4 text-light-text dark:text-dark-text">Meeting Analytics</h2>
-      {Object.keys(speakerData).length > 0 ? (
-        <Pie data={data} />
+      <h2 className="text-xl font-bold mb-4 text-light-text dark:text-dark-text">Interaction Levels</h2>
+      {Object.keys(interactionData).length > 0 ? (
+        <>
+          <div className="w-full h-64 mb-4">
+            <Pie data={data} options={{ maintainAspectRatio: false }} />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-3 text-light-text dark:text-dark-text">Interaction Details</h3>
+            <div className="space-y-4">
+              {Object.entries(interactionData).map(([person, count]) => {
+                const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                return (
+                  <div key={person}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-base font-medium text-light-text dark:text-dark-text">{person}</span>
+                      <span className="text-sm font-medium text-light-text dark:text-dark-text">{count} Interactions</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                      <div className="bg-light-accent dark:bg-dark-accent h-2.5 rounded-full" style={{ width: `${barWidth}%` }}></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
       ) : (
-        <p className="text-light-text dark:text-dark-text">No speaker data available yet.</p>
+        <p className="text-light-text dark:text-dark-text">No interaction data available yet.</p>
       )}
     </div>
   );
