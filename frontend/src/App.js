@@ -15,6 +15,11 @@ import TaskExtractor from "./components/TaskExtractor";
 
 const socket = io("http://localhost:3001");
 
+const sanitizeSpeaker = (raw) => {
+  if (!raw) return "Unknown";
+  return String(raw).replace(/^\[.*?\]\s*/g, "").trim() || "Unknown";
+};
+
 const App = () => {
   const [meetingUrl, setMeetingUrl] = useState("");
   const [transcripts, setTranscripts] = useState([]);
@@ -50,10 +55,37 @@ const App = () => {
   // Handle all real-time socket events
   useEffect(() => {
     // THIS IS THE FIX FOR DISAPPEARING TRANSCRIPTS
-    socket.on("transcript", (newTranscript) => {
-      if (!newTranscript || !newTranscript.utterance_id) {
-        return; // Safety check for invalid data
+    const onTranscript = (incoming) => {
+      if (!incoming) return;
+
+      // If incoming is a plain string (rare), convert to object
+      let newTranscript = {};
+      if (typeof incoming === "string") {
+        newTranscript = {
+          utterance_id: `ui-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+          speaker: "Unknown",
+          text: incoming,
+          timestamp: Date.now(),
+          is_final: false,
+        };
+      } else {
+        newTranscript = { ...incoming };
       }
+
+      // Ensure utterance_id exists (so we don't drop events)
+      if (!newTranscript.utterance_id) {
+        newTranscript.utterance_id = `ui-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      }
+
+      // Normalize speaker (strip bracketed timestamps like [00:03] Harshini)
+      newTranscript.speaker = sanitizeSpeaker(newTranscript.speaker || newTranscript.participant || "Unknown");
+
+      // Ensure text exists
+      newTranscript.text = (newTranscript.text || newTranscript.transcript || newTranscript.chunk || "").toString().trim();
+
+      // If still no text, skip
+      if (!newTranscript.text) return;
+
       setTranscripts((prevTranscripts) => {
         const existingIndex = prevTranscripts.findIndex(
           (t) => t.utterance_id === newTranscript.utterance_id
@@ -69,24 +101,24 @@ const App = () => {
           return [...prevTranscripts, newTranscript];
         }
       });
-    });
+    };
 
-   /* socket.on("summary", (data) => {
+    socket.on("transcript", onTranscript);
+    socket.on("live-transcript", onTranscript);
+    socket.on("transcript:update", onTranscript);
+
+    // optional: other socket events (notes/summary) left commented
+    /* socket.on("summary", (data) => {
       if (data && data.summary) {
         setSummary(data.summary);
-      }
-    });
-
-    socket.on("notes", (data) => {
-      if (data && data.notes) {
-        setNotes(data.notes);
       }
     }); */
 
     return () => {
-      socket.off("transcript");
+      socket.off("transcript", onTranscript);
+      socket.off("live-transcript", onTranscript);
+      socket.off("transcript:update", onTranscript);
       // socket.off("summary");
-      //socket.off("notes");
     };
   }, []);
 
@@ -178,9 +210,9 @@ const App = () => {
                 handleClearTranscript={handleClearTranscript}
               />
             </div>
-            {/* Task Extractor */}
+           {/* Task Extractor */}
             <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
-              <TaskExtractor />
+              <TaskExtractor transcripts={transcripts} />
             </div>
           </div>
 
@@ -192,8 +224,6 @@ const App = () => {
               <SummarySection summary={summary} />
             </div>
             */}
-
-            
 
             {/* Meeting Analytics */}
             <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
@@ -207,8 +237,9 @@ const App = () => {
           </div>
         </div>
 
-        {/* Task extractor UI (safe, non‑intrusive) */}
+        {/* Task extractor UI (safe, non-intrusive) */}
         {/* <TaskExtractor /> */}
+        
       </div>
 
       <Footer />

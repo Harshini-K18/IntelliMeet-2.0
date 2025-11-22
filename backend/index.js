@@ -1,4 +1,4 @@
-// server.js (combined: Recall bot + webhook + socket.io + /generate-mom endpoint)
+// server.js
 require("dotenv").config();
 
 const express = require("express");
@@ -6,24 +6,20 @@ const axios = require("axios");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 
-// add this require near other requires
+// task extractor (your util)
 const { extractTasks } = require("./utils/taskExtractor");
+// jira issue creator
+const { createJiraIssueFallback } = require("./utils/jira");
 
-// utilities from your existing codebase:
-// - addTranscript(text): saves transcript text
-// - getTranscript(): returns full concatenated transcript
-// - takenotes(fullTranscript): returns notes/insights (existing)
-const { addTranscript, getTranscript, takenotes } = require("./utils/takeNotes");
-
-// Ollama MoM generator (new robust handler you already added)
-const { generateMomWithOllama } = require("./utils/takeNotes");
+// existing utilities (you already have these)
+const { addTranscript, getTranscript, takenotes, generateMomWithOllama } = require("./utils/takeNotes");
 
 const app = express();
 const http = require("http");
 const { Server } = require("socket.io");
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "http://localhost:3000" },
+  cors: { origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000" },
 });
 
 // Middleware
@@ -31,7 +27,7 @@ app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 app.use(bodyParser.json({ limit: "2mb" }));
 
-// Recall API instance (used to deploy bots)
+// Recall API client (unchanged)
 const recall = axios.create({
   baseURL: "https://us-west-2.recall.ai/api/v1",
   headers: {
@@ -40,7 +36,6 @@ const recall = axios.create({
   },
 });
 
-// Utility: detect meeting platform
 function detectPlatform(url) {
   if (!url || typeof url !== "string") return "Unknown";
   if (url.includes("zoom.us")) return "Zoom";
@@ -49,23 +44,13 @@ function detectPlatform(url) {
   return "Unknown";
 }
 
-/* -----------------------
-   Deploy Recall Bot
-   POST /deploy-bot
-   body: { meeting_url }
-------------------------*/
+/* -----------------------\n   Deploy Recall Bot\n------------------------*/
 app.post("/deploy-bot", async (req, res) => {
   const { meeting_url } = req.body;
-  if (!meeting_url) {
-    return res.status(400).json({ error: "Meeting URL is required" });
-  }
+  if (!meeting_url) return res.status(400).json({ error: "Meeting URL is required" });
 
   const platform = detectPlatform(meeting_url);
-  if (platform === "Unknown") {
-    return res
-      .status(400)
-      .json({ error: "Unsupported meeting platform URL" });
-  }
+  if (platform === "Unknown") return res.status(400).json({ error: "Unsupported meeting platform URL" });
 
   try {
     const response = await recall.post("/bot", {
@@ -89,63 +74,67 @@ app.post("/deploy-bot", async (req, res) => {
       bot_id: response.data.id,
     });
   } catch (error) {
-    console.error(
-      `❌ Error deploying ${platform} bot:`,
-      error.response?.data || error.message
-    );
-    res
-      .status(500)
-      .json({ error: `Failed to deploy ${platform} bot: ${error.message}` });
+    console.error(`❌ Error deploying ${platform} bot:`, error.response?.data || error.message);
+    res.status(500).json({ error: `Failed to deploy ${platform} bot: ${error.message}` });
   }
 });
 
-/* -----------------------
-   Webhook for realtime transcription
-   POST /webhook/transcription
-   (Recall will POST here)
-------------------------*/
+/* -----------------------\n   Webhook for realtime transcription\n------------------------*/
 app.post("/webhook/transcription", async (req, res) => {
-  // Acknowledge immediately to recall
-  res.sendStatus(200);
-
+  res.sendStatus(200); // acknowledge quickly
   console.log("--- WEBHOOK RECEIVED ---");
-  // Log might be verbose — keep for debug, remove later
   console.log(JSON.stringify(req.body, null, 2));
 
   const payload = req.body;
   const transcriptData = payload?.data?.data || {};
 
-  // Basic validation
-  if (!transcriptData.words || !Array.isArray(transcriptData.words)) {
-    console.warn("Webhook payload missing words array - ignoring");
+  const hasWords = Array.isArray(transcriptData.words) && transcriptData.words.length > 0;
+  const hasText = typeof transcriptData.text === "string" && transcriptData.text.trim().length > 0;
+  if (!hasWords && !hasText) {
+    console.warn("Webhook payload missing words/text - ignoring");
     return;
   }
 
-  // Build a normalized transcript object
+  const rawSpeaker =
+    transcriptData.participant?.name ||
+    transcriptData.participant?.display_name ||
+    transcriptData.participant?.user_id ||
+    transcriptData.speaker ||
+    transcriptData.user?.name ||
+    transcriptData.owner ||
+    "Unknown";
+
+  const speaker = String(rawSpeaker).replace(/^\\[.*?\\]\\s*/g, "").trim() || "Unknown";
+  const utterance_id = transcriptData.utterance_id || `auto-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
+  const text = hasWords
+    ? transcriptData.words.map((w) => w.text).join(" ").trim()
+    : (transcriptData.text || transcriptData.transcript || "").toString().trim();
+
+  const timestamp =
+    transcriptData.words?.[0]?.start_timestamp?.relative ||
+    transcriptData.start_timestamp?.relative ||
+    Date.now();
+
   const transcript = {
-    utterance_id: transcriptData.utterance_id || `auto-${Date.now()}`,
-    speaker: transcriptData.participant?.name || "Unknown",
-    text: transcriptData.words.map((w) => w.text).join(" ").trim(),
-    timestamp:
-      transcriptData.words[0]?.start_timestamp?.relative || Date.now(),
+    utterance_id,
+    speaker,
+    text,
+    timestamp,
     is_final: Boolean(transcriptData.is_final),
   };
 
-  // Emit real-time transcript to connected frontends
+  console.log("EMITTING transcript ->", JSON.stringify(transcript));
   io.emit("transcript", transcript);
 
-  // When final segment arrives, persist and update insights/notes
   if (transcript.is_final && transcript.text) {
     try {
-      addTranscript(transcript.text);
+      addTranscript({ speaker: transcript.speaker, text: transcript.text, timestamp: transcript.timestamp });
 
-      // Generate updated notes/insights from the full transcript and emit
-      const fullTranscript = getTranscript(); // your existing aggregator
+      const fullTranscript = getTranscript();
       const notes = await (async () => {
         try {
-          // If your takenotes is synchronous, it will return value directly; if async, await it.
-          const result = takenotes(fullTranscript);
-          return result;
+          return takenotes(fullTranscript);
         } catch (err) {
           console.error("Error generating notes (takenotes):", err.message || err);
           return null;
@@ -159,12 +148,7 @@ app.post("/webhook/transcription", async (req, res) => {
   }
 });
 
-/* -----------------------
-   MoM generation endpoint
-   POST /generate-mom
-   body: { transcript: "<full transcript text>" }
-   Returns: { mom: "<generated mom text>" }
-------------------------*/
+/* -----------------------\n   MoM generation endpoint\n------------------------*/
 app.post("/generate-mom", async (req, res) => {
   const { transcript } = req.body;
   if (!transcript || transcript.trim() === "") {
@@ -180,133 +164,93 @@ app.post("/generate-mom", async (req, res) => {
   }
 });
 
+/* -----------------------\n   Task extraction endpoint\n------------------------*/
 app.post("/extract-tasks", async (req, res) => {
   try {
-    const { transcript } = req.body;
-    console.log("Received transcript for task extraction:", transcript); 
-    if (!transcript) {
-      console.log("Transcript is missing from the request body"); 
-      return res.status(400).json({ error: "Transcript is required" });
+    const transcript = req.body?.transcript || req.body?.text || "";
+    console.log("Received transcript for task extraction (first 400 chars):", (transcript || "").slice(0, 400));
+
+    if (!transcript || transcript.trim().length === 0) {
+      console.log("Transcript is missing from the request body");
+      return res.status(400).json({ error: "Transcript is required", tasks: [] });
     }
-    const tasks = await extractTasks(transcript);
-    console.log("Extracted tasks:", tasks); 
-    res.json({ tasks });
+
+    const tasks = await extractTasks(transcript, { maxTasks: 20 });
+    console.log(`Extracted ${Array.isArray(tasks) ? tasks.length : 0} tasks`);
+    return res.json({ tasks: Array.isArray(tasks) ? tasks : [] });
   } catch (error) {
-    console.error("Error in /extract-tasks:", error);
-    res.status(500).json({ error: "Failed to extract tasks" });
+    console.error("Error in /extract-tasks:", error?.message || error);
+    return res.status(500).json({ error: "Failed to extract tasks", tasks: [] });
   }
 });
 
-// --- BEGIN: Trello + Asana save endpoints ---
-// Requires: axios already imported at top of server.js
-// Make sure .env contains TRELLO_KEY, TRELLO_TOKEN, TRELLO_LIST_ID, ASANA_PAT, ASANA_PROJECT_ID (optional), ASANA_WORKSPACE_ID (optional)
-
-app.post("/api/save-to-trello", async (req, res) => {
+// Single task -> Jira
+app.post("/api/save-to-jira", async (req, res) => {
   try {
-    const { tasks = [], title = "Meeting tasks" } = req.body;
-    const key = process.env.TRELLO_KEY;
-    const token = process.env.TRELLO_TOKEN;
-    const listId = process.env.TRELLO_LIST_ID; // required
+    const { task } = req.body;
+    if (!task) return res.status(400).json({ error: "Task is required in body" });
 
-    if (!key || !token || !listId) {
-      return res.status(500).json({ error: "Trello credentials or list ID not configured on server." });
+    let created;
+    if (typeof externalSaveToJira === "function") {
+      created = await externalSaveToJira(task);
+    } else {
+      created = await createJiraIssueFallback(task);
     }
 
-    if (!Array.isArray(tasks) || tasks.length === 0) {
-      return res.status(400).json({ error: "No tasks provided" });
-    }
-
-    const created = [];
-    for (const t of tasks) {
-      const name = (t.task || "").toString().slice(0, 100) || title;
-      const descLines = [];
-      if (t.task) descLines.push(t.task);
-      if (t.assigned_to) descLines.push(`Owner: ${t.assigned_to}`);
-      if (t.deadline) descLines.push(`Deadline: ${t.deadline}`);
-      const desc = descLines.join("\n\n");
-
-      const url = `https://api.trello.com/1/cards`;
-      // Trello card creation uses query params
-      const resp = await axios.post(url, null, {
-        params: {
-          key,
-          token,
-          idList: listId,
-          name,
-          desc,
-        },
-        timeout: 15000,
-      });
-
-      created.push({ id: resp.data.id, url: resp.data.url, name: resp.data.name });
-    }
-
-    return res.json({ message: `Created ${created.length} Trello card(s)`, created });
+    return res.json({ ok: true, created }); // created.key will hold SCRUM-XX
   } catch (err) {
-    console.error("Trello save error:", err?.response?.data || err.message || err);
-    return res.status(500).json({ error: err?.response?.data || err.message || "Trello save failed" });
+    console.error("save-to-jira error:", err?.response?.data || err?.message || err);
+    return res
+      .status(500)
+      .json({ ok: false, error: err?.response?.data || err?.message || String(err) });
   }
 });
 
-app.post("/api/save-to-asana", async (req, res) => {
+// server.js (replace the existing /api/save-multiple-to-jira handler)
+app.post("/api/save-multiple-to-jira", async (req, res) => {
   try {
-    const { tasks = [], title = "Meeting tasks" } = req.body;
-    const pat = process.env.ASANA_PAT;
-    const projectId = process.env.ASANA_PROJECT_ID; // optional but recommended
-    const workspaceId = process.env.ASANA_WORKSPACE_ID; // optional fallback
-
-    if (!pat) {
-      return res.status(500).json({ error: "Asana PAT not configured on server." });
-    }
-
+    const { tasks } = req.body;
     if (!Array.isArray(tasks) || tasks.length === 0) {
-      return res.status(400).json({ error: "No tasks provided" });
+      return res.status(400).json({ ok: false, error: "tasks array required" });
     }
 
-    const created = [];
-    for (const t of tasks) {
-      const name = (t.task || title).toString().slice(0, 255);
-      const notesParts = [];
-      if (t.task) notesParts.push(t.task);
-      if (t.assigned_to) notesParts.push(`Owner: ${t.assigned_to}`);
-      if (t.deadline) notesParts.push(`Deadline: ${t.deadline}`);
-      const notes = notesParts.join("\n\n");
-
-      const payload = { data: { name, notes } };
-      if (projectId) payload.data.projects = [projectId];
-      if (workspaceId && !projectId) payload.data.workspace = workspaceId; // Asana often requires workspace when not using project
-
-      const resp = await axios.post("https://app.asana.com/api/1.0/tasks", payload, {
-        headers: {
-          Authorization: `Bearer ${pat}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 15000,
-      });
-
-      // resp.data has the created task object in resp.data.data
-      created.push({ id: resp.data?.data?.gid || null, name: resp.data?.data?.name || name, resource: resp.data?.data || resp.data });
+    const results = [];
+    for (let idx = 0; idx < tasks.length; idx++) {
+      const t = tasks[idx];
+      try {
+        let created;
+        if (typeof externalSaveToJira === "function") {
+          created = await externalSaveToJira(t);
+        } else {
+          created = await createJiraIssueFallback(t);
+        }
+        results.push({ ok: true, created, index: idx });
+      } catch (err) {
+        // collect full error info, but DO NOT throw — continue
+        const errInfo = {
+          ok: false,
+          index: idx,
+          message: err?.message || String(err),
+          response: err?.response?.data || null,
+        };
+        console.error("create-jira error for task index", idx, errInfo);
+        results.push(errInfo);
+      }
     }
 
-    return res.json({ message: `Created ${created.length} Asana task(s)`, created });
+    // Always return 200 with per-item results so client can inspect each item
+    return res.json({ ok: true, results });
   } catch (err) {
-    console.error("Asana save error:", err?.response?.data || err.message || err);
-    return res.status(500).json({ error: err?.response?.data || err.message || "Asana save failed" });
+    console.error("save-multiple-to-jira fatal error:", err);
+    return res.status(500).json({ ok: false, error: err?.message || String(err) });
   }
 });
-// --- END: Trello + Asana save endpoints ---
 
 
-/* -----------------------
-   Health check
-------------------------*/
-app.get("/health", (req, res) =>
-  res.json({ ok: true, time: new Date().toISOString() })
-);
+/* -----------------------\n   Health\n------------------------*/
+app.get("/health", (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
-/* -----------------------
-   Start server
-------------------------*/
+/* -----------------------\n   Start server\n------------------------*/
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);

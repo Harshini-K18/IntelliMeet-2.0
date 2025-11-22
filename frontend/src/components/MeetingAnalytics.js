@@ -50,7 +50,7 @@ const MeetingAnalytics = ({ transcript }) => {
 
   return (
     <div className="bg-light-card dark:bg-dark-card p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-4 text-light-text dark:text-dark-text">Interaction Levels</h2>
+      <h2 className="text-xl font-bold mb-4 text-light-text dark:text-dark-text">Meeting Analytics</h2>
       {Object.keys(interactionData).length > 0 ? (
         <>
           <div className="w-full h-64 mb-4">
