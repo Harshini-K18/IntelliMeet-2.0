@@ -1,10 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
   font-family: 'Inter', sans-serif;
-  @apply bg-gradient-to-br from-light-bg to-white dark:from-dark-bg dark:to-gray-900;
+  @apply bg-light-bg dark:bg-dark-bg transition-colors duration-300;
 }
 
 .mom-container {

@@ -171,7 +171,7 @@ const App = () => {
       <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
           <h1
-            className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-light-accent to-light-text dark:from-dark-accent dark:to-white"
+            className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-light-accent to-light-highlight dark:from-dark-accent dark:to-dark-highlight"
             style={{ fontFamily: " sans-serif" }}
           >
             IntelliMeet - Meetings Made Seamless with AI
@@ -185,7 +185,7 @@ const App = () => {
         <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md mb-8">
           <InputSection
             meetingUrl={meetingUrl}
-            setMeetingUrl={setMeetingUrl}        // <-- pass setter so InputSection can update
+            setMeetingUrl={setMeetingUrl}
             handleDeployBot={handleDeployBot}
           />
 
@@ -232,7 +232,7 @@ const App = () => {
 
             {/* MoM Section - Always visible at the bottom right */}
             <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
-              <MeetingSummary /> {/* Updated component */}
+              <MeetingSummary transcripts={transcripts} />
             </div>
           </div>
         </div>

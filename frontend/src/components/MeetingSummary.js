@@ -68,9 +68,9 @@ const MeetingSummary = () => {
 
  return (
     <div className="mt-8">
-      <h2 className="text-2xl font-semibold mb-4 text-center">Generate Minutes of Meeting</h2>
+      <h2 className="text-2xl font-semibold mb-4 text-center text-light-text dark:text-dark-text">Generate Minutes of Meeting</h2>
       <textarea
-        className="w-full p-4 border rounded-md mb-4 bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text dark:border-gray-600"
+        className="w-full p-4 border rounded-md mb-4 bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text border-light-accent dark:border-dark-accent"
         rows="6"
         placeholder="Paste the meeting transcript here..."
         value={transcript}
@@ -85,7 +85,7 @@ const MeetingSummary = () => {
       </button>
 
       {mom && (
-        <div className="bg-light-card dark:bg-dark-card p-4 rounded-md shadow-md mt-4 whitespace-pre-wrap">
+        <div className="bg-light-card dark:bg-dark-card p-4 rounded-md shadow-md mt-4 whitespace-pre-wrap text-light-text dark:text-dark-text">
           <h3 className="text-xl font-bold mb-2">Minutes of Meeting:</h3>
           <div dangerouslySetInnerHTML={{ __html: mom }} />
         </div>

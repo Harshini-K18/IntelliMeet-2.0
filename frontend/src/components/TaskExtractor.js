@@ -130,12 +130,12 @@ const saveToJira = async (taskOrTasks) => {
 
 
   return (
-    <div className="p-4 border rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-4">Task Extractor</h2>
+    <div className="p-4 border rounded-lg shadow-md bg-light-card dark:bg-dark-card">
+      <h2 className="text-xl font-bold mb-4 text-light-text dark:text-dark-text">Task Extractor</h2>
 
       {/* TEXTAREA */}
       <textarea
-        className="w-full p-3 border rounded mb-3"
+        className="w-full p-3 border rounded mb-3 bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text border-light-accent dark:border-dark-accent"
         rows="10"
         placeholder="Paste transcript here..."
         value={pastedTranscript}
@@ -145,7 +145,7 @@ const saveToJira = async (taskOrTasks) => {
       <div className="flex gap-3 mb-4">
         <button
           onClick={extractTasks}
-          className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:opacity-50"
+          className="bg-light-accent text-light-bg dark:bg-dark-accent dark:text-dark-bg py-2 px-4 rounded hover:opacity-80 disabled:opacity-50"
           disabled={isExtracting || !pastedTranscript.trim()}
         >
           {isExtracting ? "Extracting..." : "Extract Tasks"}
@@ -162,25 +162,25 @@ const saveToJira = async (taskOrTasks) => {
         </button>
       </div>
 
-      {error && <p className="text-red-500">{error}</p>}
+      {error && <p className="text-danger">{error}</p>}
 
       {/* TASKS */}
       <div className="space-y-4">
         {tasks.map((task, i) => (
           <div
             key={task.task_id || i}
-            className="p-4 border rounded-lg bg-gray-50"
+            className="p-4 border rounded-lg bg-light-bg dark:bg-dark-bg border-light-accent dark:border-dark-accent"
           >
-            <p className="font-semibold">{task.task}</p>
-            <p className="text-sm text-gray-600">
+            <p className="font-semibold text-light-text dark:text-dark-text">{task.task}</p>
+            <p className="text-sm text-light-text dark:text-dark-text">
               <strong>Owner:</strong>{" "}
               {task.assigned_to || task.owner || "Unassigned"}
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-light-text dark:text-dark-text">
               <strong>Deadline:</strong> {task.deadline || "Not set"}
             </p>
             {task.original_line && (
-              <p className="text-sm text-gray-500 italic">
+              <p className="text-sm text-light-text dark:text-dark-text italic">
                 Source: "{task.original_line}"
               </p>
             )}
@@ -188,7 +188,7 @@ const saveToJira = async (taskOrTasks) => {
             <div className="flex gap-2 mt-2">
               <button
                 onClick={() => saveToJira(task)}
-                className="bg-blue-500 text-white py-1 px-3 rounded"
+                className="bg-light-accent text-light-bg dark:bg-dark-accent dark:text-dark-bg py-1 px-3 rounded hover:opacity-80"
               >
                 Save to Jira
               </button>
@@ -198,7 +198,7 @@ const saveToJira = async (taskOrTasks) => {
                     JSON.stringify(task, null, 2)
                   )
                 }
-                className="bg-gray-500 text-white py-1 px-3 rounded"
+                className="bg-gray-500 text-white py-1 px-3 rounded hover:bg-gray-600"
               >
                 Copy
               </button>
@@ -208,10 +208,10 @@ const saveToJira = async (taskOrTasks) => {
       </div>
 
       {tasks.length > 0 && (
-        <div className="mt-5 pt-4 border-t flex gap-2">
+        <div className="mt-5 pt-4 border-t border-light-accent dark:border-dark-accent flex gap-2">
           <button
             onClick={() => saveToJira(tasks)}
-            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+            className="bg-light-accent text-light-bg dark:bg-dark-accent dark:text-dark-bg py-2 px-4 rounded hover:opacity-80"
           >
             Save All to Jira
           </button>

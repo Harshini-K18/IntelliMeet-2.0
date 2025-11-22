@@ -62,7 +62,7 @@ export default function TranscriptSection({
           <button
             onClick={() => handleDownloadTranscript(transcripts)}
             disabled={!transcripts || transcripts.length === 0}
-            className="flex items-center text-blue-600 dark:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80 transition duration-200"
+            className="flex items-center font-bold text-black dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80 transition duration-200"
           >
             <span className="mr-2">Download Transcript</span>
             <ArrowDownTrayIcon className="h-5 w-5" />
@@ -86,7 +86,7 @@ export default function TranscriptSection({
               return (
                 <div
                   key={`line-${index}`}
-                  className="border-b border-light-accent dark:border-dark-accent last:border-b-0 py-2 px-4 my-2 bg-light-card dark:bg-dark-card text-light-text dark:text-dark-text whitespace-pre-wrap rounded-lg break-words w-fit max-w-[85%] mr-auto"
+                  className="border-b border-light-accent dark:border-dark-accent last:border-b-0 py-2 px-4 my-2 bg-light-accent text-light-text dark:bg-dark-highlight dark:text-dark-text whitespace-pre-wrap rounded-lg break-words w-fit max-w-[85%] mr-auto"
                 >
                   <span>{item}</span>
                 </div>
@@ -100,7 +100,7 @@ export default function TranscriptSection({
             return (
               <div
                 key={key}
-                className="border-b border-light-accent dark:border-dark-accent last:border-b-0 py-2 px-4 my-2 bg-light-card dark:bg-dark-card text-light-text dark:text-dark-text whitespace-pre-wrap rounded-lg break-words w-fit max-w-[85%] mr-auto"
+                className="border-b border-light-accent dark:border-dark-accent last:border-b-0 py-2 px-4 my-2 bg-light-accent text-light-text dark:bg-dark-highlight dark:text-dark-text whitespace-pre-wrap rounded-lg break-words w-fit max-w-[85%] mr-auto"
                 aria-live="polite"
               >
                 <span className="font-semibold">
@@ -116,20 +116,20 @@ export default function TranscriptSection({
 
       {/* BUTTON ROW */}
       <div className="flex justify-end gap-3 mt-4">
-        {/* COPY BUTTON — BLUE */}
+        {/* COPY BUTTON */}
         <button
           onClick={handleCopyTranscripts}
           disabled={!transcripts || transcripts.length === 0}
-          className="py-2 px-4 border border-blue-600 text-blue-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 hover:text-white transition duration-200"
+          className="py-2 px-4 bg-light-accent text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80 transition duration-200 dark:bg-dark-accent dark:text-white dark:hover:opacity-80"
         >
           Copy Transcript
         </button>
 
-        {/* CLEAR BUTTON — SAME BLUE STYLE */}
+        {/* CLEAR BUTTON */}
         <button
           onClick={handleClearTranscript}
           disabled={!transcripts || transcripts.length === 0}
-          className="py-2 px-4 border border-blue-600 text-blue-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 hover:text-white transition duration-200"
+          className="py-2 px-4 bg-light-accent text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80 transition duration-200 dark:bg-dark-accent dark:text-white dark:hover:opacity-80"
         >
           Clear Transcript
         </button>

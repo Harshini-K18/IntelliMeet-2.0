@@ -4,6 +4,7 @@
     "autoprefixer": "^10.4.22",
     "axios": "^1.12.2",
     "chart.js": "^4.5.1",
+    "chartjs-adapter-date-fns": "^3.0.0",
     "chrono-node": "^2.9.0",
     "date-fns": "^4.1.0",
     "mathjs": "^15.0.0",
